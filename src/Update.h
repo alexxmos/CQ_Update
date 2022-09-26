@@ -113,7 +113,10 @@ class UpdateClass {
     size_t progress(){ return _progress; }
     size_t remaining() { return _size - _progress; }
 
-        
+    
+    /* 
+      Signing utilities
+    */
     char* pubKey_toParse = NULL;
     bool signingKey(char* pubkey)
     {
@@ -123,6 +126,8 @@ class UpdateClass {
         }
         return true;
     }
+    
+    bool setSignature(const char* expected_signature);
 
     /*
       Template to write from objects that expose
