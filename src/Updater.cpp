@@ -35,13 +35,14 @@ static const char * _err2str(uint8_t _error){
         return ("Bad Argument");
     } else if(_error == UPDATE_ERROR_ABORT){
         return ("Aborted");
+    /* CQ added */
     } else if(_error == UPDATE_ERROR_GET_SHA256){
         return ("Get SHA-256 Failed");
     } else if(_error == UPDATE_ERROR_PARSE_PUBLIC_KEY){
         return ("Parse Public Key Failed");
     } else if(_error == UPDATE_ERROR_SIGNATURE_NOT_VALID){
         return ("Signature Not Valid");
-    } else if (_error == UPDATE_ERROR_SIGNATURE_VERIFICATION) {
+    } else if(_error == UPDATE_ERROR_SIGNATURE_VERIFICATION){
         return ("Firmware Signature Verification Failed");
     }
     return ("UNKNOWN");
@@ -355,14 +356,15 @@ bool UpdateClass::end(bool evenIfRemaining){
             return false;
         }
     }
-    
+
+    // CQ
     if(pubKey_toParse != NULL) {
         if(!_signatureValid()) {
             _abort(UPDATE_ERROR_SIGNATURE_VERIFICATION);
             return false;   
         }
     }
-   
+
     return _verifyEnd();
 }
 

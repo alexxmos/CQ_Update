@@ -1,5 +1,5 @@
-#ifndef ESP8266UPDATER_H
-#define ESP8266UPDATER_H
+#ifndef QL_ESP8266UPDATER_H
+#define QL_ESP8266UPDATER_H
 
 #include <Arduino.h>
 #include <MD5Builder.h>
@@ -19,6 +19,7 @@
 #define UPDATE_ERROR_NO_PARTITION       (10)
 #define UPDATE_ERROR_BAD_ARGUMENT       (11)
 #define UPDATE_ERROR_ABORT              (12)
+// CQ
 #define UPDATE_ERROR_GET_SHA256             (13)
 #define UPDATE_ERROR_PARSE_PUBLIC_KEY       (14)
 #define UPDATE_ERROR_SIGNATURE_NOT_VALID    (15)
@@ -102,6 +103,11 @@ class UpdateClass {
       populated the result with the md5 bytes of the successfully ended firmware
     */
     void md5(uint8_t * result){ return _md5.getBytes(result); }
+    
+    /*
+      sets the expected signature for the firmware (hexString) - CQ function
+    */
+    bool setSignature(const char* expected_signature);
 
     //Helpers
     uint8_t getError(){ return _error; }
@@ -111,23 +117,17 @@ class UpdateClass {
     bool isFinished(){ return _progress == _size; }
     size_t size(){ return _size; }
     size_t progress(){ return _progress; }
-    size_t remaining() { return _size - _progress; }
+    size_t remaining(){ return _size - _progress; }
 
-    
-    /* 
-      Signing utilities
-    */
+    /* CQ added code */
     char* pubKey_toParse = NULL;
-    bool signingKey(char* pubkey)
-    {
-        pubKey_toParse = pubkey;
-        if (pubKey_toParse == NULL) {
-          return false;
-        }
-        return true;
+    bool signingKey(char* pubkey) {
+      pubKey_toParse = pubkey;
+      if (pubKey_toParse == NULL) {
+        return false;
+      }
+      return true;
     }
-    
-    bool setSignature(const char* expected_signature);
 
     /*
       Template to write from objects that expose
@@ -186,7 +186,7 @@ class UpdateClass {
     bool _verifyHeader(uint8_t data);
     bool _verifyEnd();
     bool _enablePartition(const esp_partition_t* partition);
-    bool _signatureValid();
+    bool _signatureValid(); // CQ
 
 
     uint8_t _error;
@@ -203,6 +203,7 @@ class UpdateClass {
     String _target_md5;
     MD5Builder _md5;
 
+    // CQ
     String _target_signature;
     int _target_signature_lenght;
 
