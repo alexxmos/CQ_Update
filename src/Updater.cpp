@@ -4,6 +4,10 @@
 #include "esp_ota_ops.h"
 #include "esp_image_format.h"
 
+#include "mbedtls/sha256.h"
+#include "mbedtls/base64.h"
+#include "mbedtls/x509_csr.h"
+
 static const char * _err2str(uint8_t _error){
     if(_error == UPDATE_ERROR_OK){
         return ("No Error");
@@ -31,6 +35,14 @@ static const char * _err2str(uint8_t _error){
         return ("Bad Argument");
     } else if(_error == UPDATE_ERROR_ABORT){
         return ("Aborted");
+    } else if(_error == UPDATE_ERROR_GET_SHA256){
+        return ("Get SHA-256 Failed");
+    } else if(_error == UPDATE_ERROR_PARSE_PUBLIC_KEY){
+        return ("Parse Public Key Failed");
+    } else if(_error == UPDATE_ERROR_SIGNATURE_NOT_VALID){
+        return ("Signature Not Valid");
+    } else if (_error == UPDATE_ERROR_SIGNATURE_VERIFICATION) {
+        return ("Firmware Signature Verification Failed");
     }
     return ("UNKNOWN");
 }
@@ -266,6 +278,58 @@ bool UpdateClass::setMD5(const char * expected_md5){
     return true;
 }
 
+bool UpdateClass::setSignature(const char* expected_signature) {
+    _target_signature_lenght = strlen(expected_signature);
+    _target_signature = expected_signature;
+    return true;
+}
+
+void charsToBytes(char* chars, byte* byte_array, int byte_array_len) {
+    for (int i = 0; i <byte_array_len; i++) {
+        sscanf(chars + 2*i, "%02x", &byte_array[i]);
+    }
+}
+
+bool UpdateClass::_signatureValid() {
+
+    // get the sha256 of the dowloaded fw 
+    uint8_t FWsha_256[64] = { 0 };
+    int rc = _enablePartition(_partition);
+    if (rc == 0) {
+        _abort(UPDATE_ERROR_NO_PARTITION);
+        return false;
+    }
+    esp_err_t err = esp_partition_get_sha256(_partition, FWsha_256);
+    if (err != ESP_OK) {
+        _abort(UPDATE_ERROR_GET_SHA256);
+        return false;
+    }
+
+    // verify the signature match the hash
+    mbedtls_pk_context key;
+    mbedtls_pk_init(&key);
+    rc = mbedtls_pk_parse_public_key(&key, (unsigned char*)pubKey_toParse, strlen(pubKey_toParse) + 1);
+    if (rc != 0) {
+        _abort(UPDATE_ERROR_SIGNATURE_NOT_VALID);
+        return false;
+    }
+
+    // convert signature String to chars
+    char new_chars_buff[_target_signature_lenght];
+    _target_signature.toCharArray(new_chars_buff, _target_signature_lenght+1);
+    // convert signature chars to byte array
+    int signatureBytesLen = strlen(new_chars_buff) / 2;
+    byte signatureBytes[signatureBytesLen];
+    charsToBytes(new_chars_buff, signatureBytes, signatureBytesLen);
+
+    rc = mbedtls_pk_verify(&key, MBEDTLS_MD_SHA256, FWsha_256, 32, signatureBytes, signatureBytesLen);
+    if (rc != 0) {
+        _abort(UPDATE_ERROR_SIGNATURE_NOT_VALID);
+        return false;
+    }
+    return rc == 0;
+}
+
 bool UpdateClass::end(bool evenIfRemaining){
     if(hasError() || _size == 0){
         return false;
@@ -291,7 +355,14 @@ bool UpdateClass::end(bool evenIfRemaining){
             return false;
         }
     }
-
+    
+    if(pubKey_toParse != NULL) {
+        if(!_signatureValid()) {
+            _abort(UPDATE_ERROR_SIGNATURE_VERIFICATION);
+            return false;   
+        }
+    }
+   
     return _verifyEnd();
 }
 

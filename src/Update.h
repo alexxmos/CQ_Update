@@ -19,6 +19,10 @@
 #define UPDATE_ERROR_NO_PARTITION       (10)
 #define UPDATE_ERROR_BAD_ARGUMENT       (11)
 #define UPDATE_ERROR_ABORT              (12)
+#define UPDATE_ERROR_GET_SHA256             (13)
+#define UPDATE_ERROR_PARSE_PUBLIC_KEY       (14)
+#define UPDATE_ERROR_SIGNATURE_NOT_VALID    (15)
+#define UPDATE_ERROR_SIGNATURE_VERIFICATION (16)
 
 #define UPDATE_SIZE_UNKNOWN 0xFFFFFFFF
 
@@ -107,7 +111,18 @@ class UpdateClass {
     bool isFinished(){ return _progress == _size; }
     size_t size(){ return _size; }
     size_t progress(){ return _progress; }
-    size_t remaining(){ return _size - _progress; }
+    size_t remaining() { return _size - _progress; }
+
+        
+    char* pubKey_toParse = NULL;
+    bool signingKey(char* pubkey)
+    {
+        pubKey_toParse = pubkey;
+        if (pubKey_toParse == NULL) {
+          return false;
+        }
+        return true;
+    }
 
     /*
       Template to write from objects that expose
@@ -166,6 +181,7 @@ class UpdateClass {
     bool _verifyHeader(uint8_t data);
     bool _verifyEnd();
     bool _enablePartition(const esp_partition_t* partition);
+    bool _signatureValid();
 
 
     uint8_t _error;
@@ -181,6 +197,9 @@ class UpdateClass {
 
     String _target_md5;
     MD5Builder _md5;
+
+    String _target_signature;
+    int _target_signature_lenght;
 
     int _ledPin;
     uint8_t _ledOn;
