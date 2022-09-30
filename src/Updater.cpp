@@ -309,7 +309,7 @@ bool UpdateClass::_signatureValid() {
     // verify the signature match the hash
     mbedtls_pk_context key;
     mbedtls_pk_init(&key);
-    rc = mbedtls_pk_parse_public_key(&key, (unsigned char*)pubKey_toParse, strlen(pubKey_toParse) + 1);
+    rc = mbedtls_pk_parse_public_key(&key, (const unsigned char*)pubKey_toParse, strlen(pubKey_toParse) + 1);
     if (rc != 0) {
         _abort(UPDATE_ERROR_SIGNATURE_NOT_VALID);
         return false;

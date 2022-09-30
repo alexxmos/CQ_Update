@@ -120,8 +120,8 @@ class UpdateClass {
     size_t remaining(){ return _size - _progress; }
 
     /* CQ added code */
-    char* pubKey_toParse = NULL;
-    bool signingKey(char* pubkey) {
+    const char* pubKey_toParse = NULL;
+    bool signingKey(const char* pubkey) {
       pubKey_toParse = pubkey;
       if (pubKey_toParse == NULL) {
         return false;
